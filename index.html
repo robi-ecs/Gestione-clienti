@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Anagrafica">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%23007aff'/%3E%3Ctext x='60' y='74' font-family='-apple-system,sans-serif' font-size='44' font-weight='800' fill='white' text-anchor='middle'%3EMR%3C/text%3E%3C/svg%3E">
+  <title>Gestione Anagrafica - MAX ROMANO</title>
+  <style>
+    :root {
+      --primary: #007aff;
+      --primary-hover: #0062cc;
+      --bg-color: #f5f5f7;
+      --card-bg: rgba(255, 255, 255, 0.82);
+      --border-color: rgba(0, 0, 0, 0.1);
+      --text-main: #1d1d1f;
+      --text-muted: #86868b;
+      --danger: #ff3b30;
+      --sidebar-width: 350px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: rgba(246, 246, 246, 0.9);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand-header {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .app-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-muted);
+    }
+
+    .backup-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .btn-backup {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s;
+    }
+
+    .btn-backup:hover {
+      background: #f0f0f2;
+    }
+
+    .btn-add {
+      width: 100%;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .btn-add:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .search-box {
+      padding: 12px 16px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .client-list {
+      flex: 1;
+      overflow-y: auto;
+      list-style: none;
+    }
+
+    .client-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .client-item:hover {
+      background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    .client-item.active {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .client-item.active .client-subtitle {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .client-title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 2px;
+    }
+
+    .client-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: #ffffff;
+    }
+
+    .empty-state {
+      margin: auto;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .detail-container {
+      padding: 30px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .detail-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-secondary {
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-danger {
+      background: rgba(255, 59, 48, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(255, 59, 48, 0.2);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    /* Form Inserimento Diretto */
+    .form-card-inline {
+      background: var(--bg-color);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group.full {
+      grid-column: span 2;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-group input, .form-group textarea {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      background: white;
+      outline: none;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* Grid Dati Anagrafici */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+      background: var(--bg-color);
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .notes-box {
+      grid-column: span 2;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Diario / Note */
+    .journal-section {
+      margin-top: 30px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .add-note-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+      background: var(--bg-color);
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Toolbar Formattazione */
+    .formatting-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .btn-format {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s;
+    }
+
+    .btn-format:hover {
+      background: #e5e5ea;
+    }
+
+    .color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+
+    /* Editor Ricco Editable */
+    .rich-editor {
+      min-height: 90px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      line-height: 1.5;
+      background: #ffffff;
+      outline: none;
+      overflow-y: auto;
+      max-height: 250px;
+    }
+
+    .rich-editor:empty:before {
+      content: attr(placeholder);
+      color: var(--text-muted);
+      pointer-events: none;
+      display: block;
+    }
+
+    .note-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .note-date-picker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .note-date-picker input {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      font-size: 13px;
+      outline: none;
+      background: white;
+    }
+
+    .note-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .note-card {
+      background: var(--bg-color);
+      border-radius: 10px;
+      padding: 14px;
+      border: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .note-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .note-date {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .note-card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-note-action {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: background 0.15s;
+    }
+
+    .btn-note-action:hover {
+      background: #e5e5ea;
+    }
+
+    .btn-note-action.delete {
+      color: var(--danger);
+      border-color: rgba(255, 59, 48, 0.2);
+      background: rgba(255, 59, 48, 0.05);
+    }
+
+    .btn-note-action.delete:hover {
+      background: rgba(255, 59, 48, 0.15);
+    }
+
+    .note-text {
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-header">MAX ROMANO</div>
+      <div class="app-title">Gestione Anagrafica</div>
+      <div class="backup-actions">
+        <button class="btn-backup" id="btnExport">📤 Esporta</button>
+        <button class="btn-backup" id="btnImport">📥 Importa</button>
+        <input type="file" id="fileInput" accept=".json" class="hidden">
+      </div>
+      <button class="btn-add" id="btnNewClient">+ Nuovo Cliente</button>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchInput" class="search-input" placeholder="Cerca cliente, comune, CAP...">
+    </div>
+    <ul class="client-list" id="clientList"></ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState">
+      <h3>Nessun cliente selezionato</h3>
+      <p>Seleziona un contatto dalla lista o clicca su <strong>"+ Nuovo Cliente"</strong>.</p>
+    </div>
+
+    <!-- Modulo Inserimento / Modifica Cliente -->
+    <div class="detail-container hidden" id="formContainer">
+      <div class="form-card-inline">
+        <h2 id="formTitle">Nuovo Cliente</h2>
+        <form id="clientForm" class="form-grid">
+          <input type="hidden" id="clientId">
+
+          <div class="form-group">
+            <label>Cognome / Denominazione *</label>
+            <input type="text" id="inputLastName" required>
+          </div>
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" id="inputFirstName">
+          </div>
+          <div class="form-group full">
+            <label>Indirizzo</label>
+            <input type="text" id="inputAddress">
+          </div>
+          <div class="form-group">
+            <label>Comune</label>
+            <input type="text" id="inputCity">
+          </div>
+          <div class="form-group">
+            <label>CAP</label>
+            <input type="text" id="inputCap">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="inputEmail">
+          </div>
+          <div class="form-group">
+            <label>Telefono</label>
+            <input type="text" id="inputPhone">
+          </div>
+          <div class="form-group full">
+            <label>Codice Fiscale / P.IVA</label>
+            <input type="text" id="inputTaxCode">
+          </div>
+          <div class="form-group full">
+            <label>Note Anagrafiche (Generali)</label>
+            <textarea id="inputNotes" style="height: 60px;"></textarea>
+          </div>
+
+          <div class="form-actions full">
+            <button type="button" class="btn-secondary" id="btnCancelForm">Annulla</button>
+            <button type="submit" class="btn-add" style="width: auto;">Salva Cliente</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Vista Dettaglio Cliente -->
+    <div class="detail-container hidden" id="detailContainer">
+      <div class="detail-header">
+        <div>
+          <h1 class="detail-title" id="detailName">-</h1>
+          <p class="client-subtitle" id="detailSub">-</p>
+        </div>
+        <div class="action-btns">
+          <button class="btn-secondary" id="btnEditClient">Modifica</button>
+          <button class="btn-danger" id="btnDeleteClient">Elimina</button>
+        </div>
+      </div>
+
+      <!-- Scheda Dati -->
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Indirizzo</span>
+          <span class="info-value" id="detailAddress">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Comune & CAP</span>
+          <span class="info-value" id="detailCityCap">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Email</span>
+          <span class="info-value" id="detailEmail">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Telefono</span>
+          <span class="info-value" id="detailPhone">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Codice Fiscale / P.IVA</span>
+          <span class="info-value" id="detailTaxCode">-</span>
+        </div>
+        <div class="info-item notes-box">
+          <span class="info-label">Note Anagrafiche</span>
+          <span class="info-value" id="detailNotes" style="font-size:14px; font-weight:normal;">-</span>
+        </div>
+      </div>
+
+      <!-- Diario Note -->
+      <div class="journal-section">
+        <h2 class="section-title">Diario & Cronologia Note</h2>
+        <div class="add-note-form">
+          <input type="hidden" id="editingNoteId">
+
+          <!-- Toolbar per formattazione visuale aggiornata -->
+          <div class="formatting-toolbar">
+            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('bold')"><b>B</b> Grassetto</button>
+            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('underline')"><u>U</u> Sottolineato</button>
+            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('hiliteColor', '#ffe600')"><span class="color-dot" style="background:#ffe600;"></span> Giallo</button>
+            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('hiliteColor', '#5cd65c')"><span class="color-dot" style="background:#5cd65c;"></span> Verde</button>
+            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('hiliteColor', '#ff6b6b')"><span class="color-dot" style="background:#ff6b6b;"></span> Rosso</button>
+            <button type="button" class="btn-format" onmousedown="event.preventDefault(); clearFormatting()">🧹 Rimuovi Formato</button>
+          </div>
+
+          <!-- Area di testo interattiva -->
+          <div id="noteEditor" class="rich-editor" contenteditable="true" placeholder="Scrivi una nuova nota per il diario..."></div>
+
+          <div class="note-toolbar">
+            <div class="note-date-picker">
+              <span>Data nota:</span>
+              <input type="date" id="noteDateInput">
+            </div>
+            <button type="button" class="btn-add" id="btnSaveNote" style="width: auto; padding: 6px 14px; font-size: 13px;">Aggiungi al Diario</button>
+          </div>
+        </div>
+
+        <div class="note-list" id="noteList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- DATABASE LOCALE E STATO ---
+    let clients = JSON.parse(localStorage.getItem('max_clients')) || [];
+    let currentClientId = null;
+
+    // Riferimenti DOM
+    const clientListEl = document.getElementById('clientList');
+    const emptyStateEl = document.getElementById('emptyState');
+    const formContainerEl = document.getElementById('formContainer');
+    const detailContainerEl = document.getElementById('detailContainer');
+    const clientForm = document.getElementById('clientForm');
+    const searchInput = document.getElementById('searchInput');
+
+    // Funzione Formattazione Editor Testo
+    function applyFormat(command, value = null) {
+      const editor = document.getElementById('noteEditor');
+      editor.focus();
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand(command, false, value);
+    }
+
+    // Rimozione completa del formato (incluso colore di evidenziazione su testo selezionato o nuova riga/cursore)
+    function clearFormatting() {
+      const editor = document.getElementById('noteEditor');
+      editor.focus();
+      const selection = window.getSelection();
+
+      // 1. Esegui comandi standard di pulizia stile e sfondo
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('removeFormat', false, null);
+      document.execCommand('hiliteColor', false, 'transparent');
+      document.execCommand('backColor', false, 'transparent');
+
+      if (!selection || selection.rangeCount === 0) return;
+      const range = selection.getRangeAt(0);
+
+      // 2. Se il cursore è su una nuova riga o punto senza selezione (collapsed),
+      // esci dagli eventuali tag <span style="background-color..."> o <mark>/<font> ereditati
+      if (range.collapsed) {
+        let node = range.startContainer;
+        let styledAncestor = null;
+        let current = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+
+        while (current && current !== editor) {
+          if (
+            current.tagName === 'SPAN' ||
+            current.tagName === 'MARK' ||
+            current.tagName === 'FONT' ||
+            current.tagName === 'B' ||
+            current.tagName === 'STRONG' ||
+            current.tagName === 'U' ||
+            (current.style && (current.style.backgroundColor || current.style.background))
+          ) {
+            styledAncestor = current;
+          }
+          current = current.parentElement;
+        }
+
+        if (styledAncestor && styledAncestor.parentNode) {
+          // Inserisce uno spazio a larghezza zero fuori dal tag colorato e sposta lì il cursore
+          const zwsp = document.createTextNode('​');
+          if (styledAncestor.nextSibling) {
+            styledAncestor.parentNode.insertBefore(zwsp, styledAncestor.nextSibling);
+          } else {
+            styledAncestor.parentNode.appendChild(zwsp);
+          }
+          const newRange = document.createRange();
+          newRange.setStart(zwsp, 1);
+          newRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      } else {
+        // 3. Se c'è del testo selezionato, rimuovi forzatamente eventuali stili residui di sfondo nei nodi selezionati
+        const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+          ? range.commonAncestorContainer.parentElement
+          : range.commonAncestorContainer;
+
+        if (container && editor.contains(container)) {
+          const elements = container.querySelectorAll ? container.querySelectorAll('*') : [];
+          elements.forEach(el => {
+            if (selection.containsNode(el, true)) {
+              el.style.backgroundColor = '';
+              el.style.background = '';
+              el.style.fontWeight = '';
+              el.style.textDecoration = '';
+              if (el.tagName === 'MARK') {
+                const span = document.createElement('span');
+                span.innerHTML = el.innerHTML;
+                el.replaceWith(span);
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // Salvataggio su LocalStorage
+    function saveToStorage() {
+      localStorage.setItem('max_clients', JSON.stringify(clients));
+    }
+
+    // Inizializzazione data odierna nel picker note
+    function initNoteDate() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('noteDateInput').value = today;
+    }
+
+    // --- GESTIONE CLIENTE ---
+    function renderClientList(filter = '') {
+      clientListEl.innerHTML = '';
+      const filtered = clients.filter(c => {
+        const query = filter.toLowerCase();
+        const text = `${c.lastName} ${c.firstName} ${c.city} ${c.cap} ${c.taxCode}`.toLowerCase();
+        return text.includes(query);
+      });
+
+      filtered.sort((a, b) => a.lastName.localeCompare(b.lastName));
+
+      if (filtered.length === 0) {
+        clientListEl.innerHTML = '<li style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">Nessun cliente trovato</li>';
+        return;
+      }
+
+      filtered.forEach(client => {
+        const li = document.createElement('li');
+        li.className = `client-item ${client.id === currentClientId ? 'active' : ''}`;
+        li.innerHTML = `
+          <div class="client-title">${client.lastName} ${client.firstName || ''}</div>
+          <div class="client-subtitle">${client.city ? client.city + ' (' + (client.cap || '') + ')' : (client.email || 'Nessun dettaglio')}</div>
+        `;
+        li.onclick = () => selectClient(client.id);
+        clientListEl.appendChild(li);
+      });
+    }
+
+    function selectClient(id) {
+      currentClientId = id;
+      renderClientList(searchInput.value);
+
+      const client = clients.find(c => c.id === id);
+      if (!client) return;
+
+      emptyStateEl.classList.add('hidden');
+      formContainerEl.classList.add('hidden');
+      detailContainerEl.classList.remove('hidden');
+
+      // Pulisci eventuale stato di modifica nota precedente
+      document.getElementById('editingNoteId').value = '';
+      document.getElementById('btnSaveNote').textContent = "Aggiungi al Diario";
+      document.getElementById('noteEditor').innerHTML = '';
+
+      document.getElementById('detailName').textContent = `${client.lastName} ${client.firstName || ''}`;
+      document.getElementById('detailSub').textContent = client.taxCode ? `CF/P.IVA: ${client.taxCode}` : 'Anagrafica Cliente';
+      document.getElementById('detailAddress').textContent = client.address || '-';
+      document.getElementById('detailCityCap').textContent = `${client.city || '-'} ${client.cap ? '(' + client.cap + ')' : ''}`;
+      document.getElementById('detailEmail').textContent = client.email || '-';
+      document.getElementById('detailPhone').textContent = client.phone || '-';
+      document.getElementById('detailTaxCode').textContent = client.taxCode || '-';
+      document.getElementById('detailNotes').textContent = client.notes || 'Nessuna nota anagrafica';
+
+      renderNotes(client);
+    }
+
+    // --- GESTIONE FORM CLIENTE ---
+    document.getElementById('btnNewClient').onclick = () => {
+      currentClientId = null;
+      renderClientList(searchInput.value);
+      emptyStateEl.classList.add('hidden');
+      detailContainerEl.classList.add('hidden');
+      formContainerEl.classList.remove('hidden');
+
+      document.getElementById('formTitle').textContent = "Nuovo Cliente";
+      clientForm.reset();
+      document.getElementById('clientId').value = '';
+    };
+
+    document.getElementById('btnCancelForm').onclick = () => {
+      formContainerEl.classList.add('hidden');
+      if (currentClientId) {
+        detailContainerEl.classList.remove('hidden');
+      } else {
+        emptyStateEl.classList.remove('hidden');
+      }
+    };
+
+    clientForm.onsubmit = (e) => {
+      e.preventDefault();
+      const id = document.getElementById('clientId').value;
+      const clientData = {
+        id: id ? Number(id) : Date.now(),
+        lastName: document.getElementById('inputLastName').value.trim(),
+        firstName: document.getElementById('inputFirstName').value.trim(),
+        address: document.getElementById('inputAddress').value.trim(),
+        city: document.getElementById('inputCity').value.trim(),
+        cap: document.getElementById('inputCap').value.trim(),
+        email: document.getElementById('inputEmail').value.trim(),
+        phone: document.getElementById('inputPhone').value.trim(),
+        taxCode: document.getElementById('inputTaxCode').value.trim(),
+        notes: document.getElementById('inputNotes').value.trim(),
+        journal: id ? (clients.find(c => c.id == id)?.journal || []) : []
+      };
+
+      if (id) {
+        const index = clients.findIndex(c => c.id == id);
+        if (index !== -1) clients[index] = clientData;
+      } else {
+        clients.push(clientData);
+      }
+
+      saveToStorage();
+      renderClientList(searchInput.value);
+      selectClient(clientData.id);
+    };
+
+    document.getElementById('btnEditClient').onclick = () => {
+      const client = clients.find(c => c.id === currentClientId);
+      if (!client) return;
+
+      detailContainerEl.classList.add('hidden');
+      formContainerEl.classList.remove('hidden');
+      document.getElementById('formTitle').textContent = "Modifica Cliente";
+
+      document.getElementById('clientId').value = client.id;
+      document.getElementById('inputLastName').value = client.lastName || '';
+      document.getElementById('inputFirstName').value = client.firstName || '';
+      document.getElementById('inputAddress').value = client.address || '';
+      document.getElementById('inputCity').value = client.city || '';
+      document.getElementById('inputCap').value = client.cap || '';
+      document.getElementById('inputEmail').value = client.email || '';
+      document.getElementById('inputPhone').value = client.phone || '';
+      document.getElementById('inputTaxCode').value = client.taxCode || '';
+      document.getElementById('inputNotes').value = client.notes || '';
+    };
+
+    document.getElementById('btnDeleteClient').onclick = () => {
+      if (confirm("Vuoi davvero eliminare questo cliente e tutto il suo diario?")) {
+        clients = clients.filter(c => c.id !== currentClientId);
+        saveToStorage();
+        currentClientId = null;
+        renderClientList(searchInput.value);
+        detailContainerEl.classList.add('hidden');
+        emptyStateEl.classList.remove('hidden');
+      }
+    };
+
+    // --- GESTIONE DIARIO / NOTE ---
+    function renderNotes(client) {
+      const noteListEl = document.getElementById('noteList');
+      noteListEl.innerHTML = '';
+      initNoteDate();
+
+      if (!client.journal || client.journal.length === 0) {
+        noteListEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:10px;">Nessuna nota nel diario.</p>';
+        return;
+      }
+
+      // Ordina per data decrescente
+      const sortedNotes = [...client.journal].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      sortedNotes.forEach(note => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+        card.innerHTML = `
+          <div class="note-card-header">
+            <span class="note-date">📅 ${note.date}</span>
+            <div class="note-card-actions">
+              <button class="btn-note-action" onclick="editNote('${note.id}')">Modifica</button>
+              <button class="btn-note-action delete" onclick="deleteNote('${note.id}')">Elimina</button>
+            </div>
+          </div>
+          <div class="note-text">${note.text}</div>
+        `;
+        noteListEl.appendChild(card);
+      });
+    }
+
+    document.getElementById('btnSaveNote').onclick = () => {
+      const client = clients.find(c => c.id === currentClientId);
+      if (!client) return;
+
+      const editor = document.getElementById('noteEditor');
+      // Pulisce eventuali caratteri invisibili ​ usati per uscire dai tag colorati
+      const cleanHtml = editor.innerHTML.replace(/​/g, '').trim();
+      const plainText = editor.textContent.replace(/​/g, '').trim();
+      const date = document.getElementById('noteDateInput').value;
+      const editingId = document.getElementById('editingNoteId').value;
+
+      if (!plainText && !cleanHtml.includes('<img')) {
+        alert("Inserisci del testo nella nota.");
+        return;
+      }
+
+      if (!client.journal) client.journal = [];
+
+      if (editingId) {
+        const note = client.journal.find(n => String(n.id) === String(editingId));
+        if (note) {
+          note.text = cleanHtml;
+          note.date = date;
+        }
+        document.getElementById('editingNoteId').value = '';
+        document.getElementById('btnSaveNote').textContent = "Aggiungi al Diario";
+      } else {
+        const newNote = {
+          id: 'note_' + Date.now(),
+          date: date || new Date().toISOString().split('T')[0],
+          text: cleanHtml
+        };
+        client.journal.push(newNote);
+      }
+
+      saveToStorage();
+      editor.innerHTML = '';
+      initNoteDate();
+      renderNotes(client);
+    };
+
+    window.editNote = function(noteId) {
+      const client = clients.find(c => c.id === currentClientId);
+      if (!client) return;
+      const note = client.journal.find(n => String(n.id) === String(noteId));
+      if (!note) return;
+
+      document.getElementById('noteEditor').innerHTML = note.text;
+      document.getElementById('noteDateInput').value = note.date;
+      document.getElementById('editingNoteId').value = note.id;
+      document.getElementById('btnSaveNote').textContent = "Aggiorna Nota";
+      document.getElementById('noteEditor').focus();
+    };
+
+    window.deleteNote = function(noteId) {
+      if (confirm("Eliminare questa nota dal diario?")) {
+        const client = clients.find(c => c.id === currentClientId);
+        if (!client) return;
+        client.journal = client.journal.filter(n => String(n.id) !== String(noteId));
+        saveToStorage();
+        renderNotes(client);
+      }
+    };
+
+    // --- GESTIONE BACKUP (ESPORTAZIONE E IMPORTAZIONE) ---
+    document.getElementById('btnExport').onclick = () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(clients, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `backup_anagrafica_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    };
+
+    const btnImport = document.getElementById('btnImport');
+    const fileInput = document.getElementById('fileInput');
+
+    btnImport.onclick = () => {
+      fileInput.click();
+    };
+
+    fileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const importedData = JSON.parse(event.target.result);
+          if (Array.isArray(importedData)) {
+            if (confirm(`Trovati ${importedData.length} clienti nel file di backup. Vuoi sostituire l'archivio attuale con questi dati?`)) {
+              clients = importedData;
+              saveToStorage();
+              currentClientId = null;
+              renderClientList();
+              detailContainerEl.classList.add('hidden');
+              formContainerEl.classList.add('hidden');
+              emptyStateEl.classList.remove('hidden');
+              alert("Backup importato con successo!");
+            }
+          } else {
+            alert("Il file non è un formato di backup valido.");
+          }
+        } catch (err) {
+          alert("Errore durante la lettura del file JSON.");
+        }
+        fileInput.value = ''; // Reset input file
+      };
+      reader.readAsText(file);
+    };
+
+    // Ricerca in tempo reale
+    searchInput.oninput = (e) => {
+      renderClientList(e.target.value);
+    };
+
+    // Avvio iniziale
+    renderClientList();
+    initNoteDate();
+  </script>
+</body>
+</html>
