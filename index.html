@@ -180,7 +180,7 @@
     }
 
     .detail-container {
-      padding: 30px;
+      padding: 18px 26px;
       max-width: 900px;
       width: 100%;
       margin: 0 auto;
@@ -190,15 +190,15 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
       border-bottom: 1px solid var(--border-color);
     }
 
     .detail-title {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .action-btns {
@@ -279,10 +279,10 @@
     .info-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
+      gap: 10px 14px;
+      margin-bottom: 14px;
       background: var(--bg-color);
-      padding: 20px;
+      padding: 14px;
       border-radius: 12px;
     }
 
@@ -292,44 +292,44 @@
     }
 
     .info-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .info-value {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 500;
     }
 
     .notes-box {
       grid-column: span 2;
       background: white;
-      padding: 12px;
+      padding: 10px 12px;
       border-radius: 8px;
       border: 1px solid var(--border-color);
     }
 
     /* Diario / Note */
     .journal-section {
-      margin-top: 30px;
+      margin-top: 14px;
     }
 
     .section-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 600;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
 
     .add-note-form {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 24px;
+      gap: 8px;
+      margin-bottom: 14px;
       background: var(--bg-color);
-      padding: 14px;
+      padding: 12px;
       border-radius: 10px;
       border: 1px solid var(--border-color);
     }
@@ -396,7 +396,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     .note-date-picker {
@@ -419,13 +419,13 @@
     .note-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .note-card {
       background: var(--bg-color);
       border-radius: 10px;
-      padding: 14px;
+      padding: 12px 14px;
       border: 1px solid var(--border-color);
       position: relative;
     }
@@ -438,9 +438,10 @@
     }
 
     .note-date {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-main);
+      font-weight: 800;
+      letter-spacing: 0.2px;
     }
 
     .note-card-actions {
@@ -476,6 +477,7 @@
     .note-text {
       font-size: 14px;
       line-height: 1.5;
+      min-height: calc(4 * 1.5em);
       word-break: break-word;
     }
 
@@ -494,7 +496,7 @@
       <div class="backup-actions">
         <button class="btn-backup" id="btnExport">📤 Esporta</button>
         <button class="btn-backup" id="btnImport">📥 Importa</button>
-        <input type="file" id="fileInput" accept=".json" class="hidden">
+        <input type="file" id="fileInput" accept=".json,application/json" class="hidden">
       </div>
       <button class="btn-add" id="btnNewClient">+ Nuovo Cliente</button>
     </div>
@@ -699,7 +701,7 @@
 
         if (styledAncestor && styledAncestor.parentNode) {
           // Inserisce uno spazio a larghezza zero fuori dal tag colorato e sposta lì il cursore
-          const zwsp = document.createTextNode('​');
+          const zwsp = document.createTextNode('\u200B');
           if (styledAncestor.nextSibling) {
             styledAncestor.parentNode.insertBefore(zwsp, styledAncestor.nextSibling);
           } else {
@@ -921,9 +923,9 @@
       if (!client) return;
 
       const editor = document.getElementById('noteEditor');
-      // Pulisce eventuali caratteri invisibili ​ usati per uscire dai tag colorati
-      const cleanHtml = editor.innerHTML.replace(/​/g, '').trim();
-      const plainText = editor.textContent.replace(/​/g, '').trim();
+      // Pulisce eventuali caratteri invisibili usati per uscire dai tag colorati
+      const cleanHtml = editor.innerHTML.replace(/\u200B/g, '').trim();
+      const plainText = editor.textContent.replace(/\u200B/g, '').trim();
       const date = document.getElementById('noteDateInput').value;
       const editingId = document.getElementById('editingNoteId').value;
 
@@ -982,13 +984,15 @@
 
     // --- GESTIONE BACKUP (ESPORTAZIONE E IMPORTAZIONE) ---
     document.getElementById('btnExport').onclick = () => {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(clients, null, 2));
+      const blob = new Blob([JSON.stringify(clients, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `backup_anagrafica_${new Date().toISOString().split('T')[0]}.json`);
+      downloadAnchor.href = url;
+      downloadAnchor.download = `backup_anagrafica_${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
 
     const btnImport = document.getElementById('btnImport');
