@@ -180,7 +180,7 @@
     }
 
     .detail-container {
-      padding: 18px 26px;
+      padding: 12px 24px 20px;
       max-width: 900px;
       width: 100%;
       margin: 0 auto;
@@ -190,15 +190,15 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 14px;
-      padding-bottom: 10px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
       border-bottom: 1px solid var(--border-color);
     }
 
     .detail-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
 
     .action-btns {
@@ -209,7 +209,7 @@
     .btn-secondary {
       background: var(--bg-color);
       border: 1px solid var(--border-color);
-      padding: 8px 14px;
+      padding: 7px 13px;
       border-radius: 8px;
       font-size: 13px;
       font-weight: 500;
@@ -220,7 +220,7 @@
       background: rgba(255, 59, 48, 0.1);
       color: var(--danger);
       border: 1px solid rgba(255, 59, 48, 0.2);
-      padding: 8px 14px;
+      padding: 7px 13px;
       border-radius: 8px;
       font-size: 13px;
       font-weight: 500;
@@ -279,11 +279,11 @@
     .info-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 10px 14px;
-      margin-bottom: 14px;
+      gap: 7px 14px;
+      margin-bottom: 10px;
       background: var(--bg-color);
-      padding: 14px;
-      border-radius: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
     }
 
     .info-item {
@@ -296,7 +296,7 @@
       color: var(--text-muted);
       text-transform: uppercase;
       font-weight: 600;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
 
     .info-value {
@@ -307,29 +307,37 @@
     .notes-box {
       grid-column: span 2;
       background: white;
-      padding: 10px 12px;
+      padding: 8px 12px;
       border-radius: 8px;
       border: 1px solid var(--border-color);
     }
 
+    #detailNotes {
+      display: block;
+      font-size: 14px;
+      font-weight: normal;
+      line-height: 1.45;
+      min-height: calc(5 * 1.45em);
+    }
+
     /* Diario / Note */
     .journal-section {
-      margin-top: 14px;
+      margin-top: 10px;
     }
 
     .section-title {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 600;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .add-note-form {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       background: var(--bg-color);
-      padding: 12px;
+      padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid var(--border-color);
     }
@@ -340,7 +348,7 @@
       flex-wrap: wrap;
       gap: 6px;
       align-items: center;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 1px solid var(--border-color);
     }
 
@@ -372,8 +380,8 @@
 
     /* Editor Ricco Editable */
     .rich-editor {
-      min-height: 90px;
-      padding: 10px 12px;
+      min-height: 84px;
+      padding: 9px 12px;
       border-radius: 8px;
       border: 1px solid var(--border-color);
       font-size: 14px;
@@ -396,7 +404,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
     .note-date-picker {
@@ -604,7 +612,7 @@
         </div>
         <div class="info-item notes-box">
           <span class="info-label">Note Anagrafiche</span>
-          <span class="info-value" id="detailNotes" style="font-size:14px; font-weight:normal;">-</span>
+          <span id="detailNotes">-</span>
         </div>
       </div>
 
@@ -653,6 +661,23 @@
     const detailContainerEl = document.getElementById('detailContainer');
     const clientForm = document.getElementById('clientForm');
     const searchInput = document.getElementById('searchInput');
+
+    // Converte una data (aaaa-mm-gg) in formato italiano gg/mm/aaaa
+    function formatDateItalian(dateStr) {
+      if (!dateStr) return '';
+      const parts = String(dateStr).split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime())) {
+        const dd = String(parsed.getDate()).padStart(2, '0');
+        const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+        const yyyy = parsed.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      }
+      return dateStr;
+    }
 
     // Funzione Formattazione Editor Testo
     function applyFormat(command, value = null) {
@@ -906,7 +931,7 @@
         card.className = 'note-card';
         card.innerHTML = `
           <div class="note-card-header">
-            <span class="note-date">📅 ${note.date}</span>
+            <span class="note-date">📅 ${formatDateItalian(note.date)}</span>
             <div class="note-card-actions">
               <button class="btn-note-action" onclick="editNote('${note.id}')">Modifica</button>
               <button class="btn-note-action delete" onclick="deleteNote('${note.id}')">Elimina</button>
