@@ -272,6 +272,7 @@
     #inputNotes {
       min-height: calc(5 * 1.45em);
       resize: vertical;
+      white-space: pre-wrap;
     }
 
     .form-actions {
@@ -311,6 +312,16 @@
       font-weight: 500;
     }
 
+    .quick-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .quick-link:hover {
+      text-decoration: underline;
+    }
+
     .notes-box {
       grid-column: span 2;
       background: white;
@@ -325,6 +336,8 @@
       font-weight: normal;
       line-height: 1.45;
       min-height: calc(5 * 1.45em);
+      white-space: pre-line;
+      word-break: break-word;
     }
 
     /* Diario / Note */
@@ -332,10 +345,24 @@
       margin-top: 10px;
     }
 
+    .journal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
     .section-title {
       font-size: 16px;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 0;
+    }
+
+    .journal-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
     }
 
     .add-note-form {
@@ -625,7 +652,10 @@
 
       <!-- Diario Note -->
       <div class="journal-section">
-        <h2 class="section-title">Diario & Cronologia Note</h2>
+        <div class="journal-header">
+          <h2 class="section-title">Diario & Cronologia Note</h2>
+          <span class="journal-meta" id="journalMeta">0 note</span>
+        </div>
         <div class="add-note-form">
           <input type="hidden" id="editingNoteId">
 
@@ -634,444 +664,4 @@
             <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('bold')"><b>B</b> Grassetto</button>
             <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('underline')"><u>U</u> Sottolineato</button>
             <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('hiliteColor', '#ffe600')"><span class="color-dot" style="background:#ffe600;"></span> Giallo</button>
-            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('hiliteColor', '#5cd65c')"><span class="color-dot" style="background:#5cd65c;"></span> Verde</button>
-            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('hiliteColor', '#ff6b6b')"><span class="color-dot" style="background:#ff6b6b;"></span> Rosso</button>
-            <button type="button" class="btn-format" onmousedown="event.preventDefault(); clearFormatting()">🧹 Rimuovi Formato</button>
-          </div>
-
-          <!-- Area di testo interattiva -->
-          <div id="noteEditor" class="rich-editor" contenteditable="true" placeholder="Scrivi una nuova nota per il diario..."></div>
-
-          <div class="note-toolbar">
-            <div class="note-date-picker">
-              <span>Data nota:</span>
-              <input type="date" id="noteDateInput">
-            </div>
-            <button type="button" class="btn-add" id="btnSaveNote" style="width: auto; padding: 6px 14px; font-size: 13px;">Aggiungi al Diario</button>
-          </div>
-        </div>
-
-        <div class="note-list" id="noteList"></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // --- DATABASE LOCALE E STATO ---
-    let clients = JSON.parse(localStorage.getItem('max_clients')) || [];
-    let currentClientId = null;
-
-    // Riferimenti DOM
-    const clientListEl = document.getElementById('clientList');
-    const emptyStateEl = document.getElementById('emptyState');
-    const formContainerEl = document.getElementById('formContainer');
-    const detailContainerEl = document.getElementById('detailContainer');
-    const clientForm = document.getElementById('clientForm');
-    const searchInput = document.getElementById('searchInput');
-
-    // Converte una data (aaaa-mm-gg) in formato italiano gg/mm/aaaa
-    function formatDateItalian(dateStr) {
-      if (!dateStr) return '';
-      const parts = String(dateStr).split('-');
-      if (parts.length === 3 && parts[0].length === 4) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      const parsed = new Date(dateStr);
-      if (!isNaN(parsed.getTime())) {
-        const dd = String(parsed.getDate()).padStart(2, '0');
-        const mm = String(parsed.getMonth() + 1).padStart(2, '0');
-        const yyyy = parsed.getFullYear();
-        return `${dd}/${mm}/${yyyy}`;
-      }
-      return dateStr;
-    }
-
-    // Funzione Formattazione Editor Testo
-    function applyFormat(command, value = null) {
-      const editor = document.getElementById('noteEditor');
-      editor.focus();
-      document.execCommand('styleWithCSS', false, true);
-      document.execCommand(command, false, value);
-    }
-
-    // Rimozione completa del formato (incluso colore di evidenziazione su testo selezionato o nuova riga/cursore)
-    function clearFormatting() {
-      const editor = document.getElementById('noteEditor');
-      editor.focus();
-      const selection = window.getSelection();
-
-      // 1. Esegui comandi standard di pulizia stile e sfondo
-      document.execCommand('styleWithCSS', false, true);
-      document.execCommand('removeFormat', false, null);
-      document.execCommand('hiliteColor', false, 'transparent');
-      document.execCommand('backColor', false, 'transparent');
-
-      if (!selection || selection.rangeCount === 0) return;
-      const range = selection.getRangeAt(0);
-
-      // 2. Se il cursore è su una nuova riga o punto senza selezione (collapsed),
-      // esci dagli eventuali tag <span style="background-color..."> o <mark>/<font> ereditati
-      if (range.collapsed) {
-        let node = range.startContainer;
-        let styledAncestor = null;
-        let current = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
-
-        while (current && current !== editor) {
-          if (
-            current.tagName === 'SPAN' ||
-            current.tagName === 'MARK' ||
-            current.tagName === 'FONT' ||
-            current.tagName === 'B' ||
-            current.tagName === 'STRONG' ||
-            current.tagName === 'U' ||
-            (current.style && (current.style.backgroundColor || current.style.background))
-          ) {
-            styledAncestor = current;
-          }
-          current = current.parentElement;
-        }
-
-        if (styledAncestor && styledAncestor.parentNode) {
-          // Inserisce uno spazio a larghezza zero fuori dal tag colorato e sposta lì il cursore
-          const zwsp = document.createTextNode('\u200B');
-          if (styledAncestor.nextSibling) {
-            styledAncestor.parentNode.insertBefore(zwsp, styledAncestor.nextSibling);
-          } else {
-            styledAncestor.parentNode.appendChild(zwsp);
-          }
-          const newRange = document.createRange();
-          newRange.setStart(zwsp, 1);
-          newRange.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        }
-      } else {
-        // 3. Se c'è del testo selezionato, rimuovi forzatamente eventuali stili residui di sfondo nei nodi selezionati
-        const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE
-          ? range.commonAncestorContainer.parentElement
-          : range.commonAncestorContainer;
-
-        if (container && editor.contains(container)) {
-          const elements = container.querySelectorAll ? container.querySelectorAll('*') : [];
-          elements.forEach(el => {
-            if (selection.containsNode(el, true)) {
-              el.style.backgroundColor = '';
-              el.style.background = '';
-              el.style.fontWeight = '';
-              el.style.textDecoration = '';
-              if (el.tagName === 'MARK') {
-                const span = document.createElement('span');
-                span.innerHTML = el.innerHTML;
-                el.replaceWith(span);
-              }
-            }
-          });
-        }
-      }
-    }
-
-    // Salvataggio su LocalStorage
-    function saveToStorage() {
-      localStorage.setItem('max_clients', JSON.stringify(clients));
-    }
-
-    // Inizializzazione data odierna nel picker note
-    function initNoteDate() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('noteDateInput').value = today;
-    }
-
-    // --- GESTIONE CLIENTE ---
-    function renderClientList(filter = '') {
-      clientListEl.innerHTML = '';
-      const filtered = clients.filter(c => {
-        const query = filter.toLowerCase();
-        const text = `${c.lastName} ${c.firstName} ${c.city} ${c.cap} ${c.taxCode}`.toLowerCase();
-        return text.includes(query);
-      });
-
-      filtered.sort((a, b) => a.lastName.localeCompare(b.lastName));
-
-      if (filtered.length === 0) {
-        clientListEl.innerHTML = '<li style="padding:16px; text-align:center; color:var(--text-muted); font-size:13px;">Nessun cliente trovato</li>';
-        return;
-      }
-
-      filtered.forEach(client => {
-        const li = document.createElement('li');
-        li.className = `client-item ${client.id === currentClientId ? 'active' : ''}`;
-        li.innerHTML = `
-          <div class="client-title">${client.lastName} ${client.firstName || ''}</div>
-          <div class="client-subtitle">${client.city ? client.city + ' (' + (client.cap || '') + ')' : (client.email || 'Nessun dettaglio')}</div>
-        `;
-        li.onclick = () => selectClient(client.id);
-        clientListEl.appendChild(li);
-      });
-    }
-
-    function selectClient(id) {
-      currentClientId = id;
-      renderClientList(searchInput.value);
-
-      const client = clients.find(c => c.id === id);
-      if (!client) return;
-
-      emptyStateEl.classList.add('hidden');
-      formContainerEl.classList.add('hidden');
-      detailContainerEl.classList.remove('hidden');
-
-      // Pulisci eventuale stato di modifica nota precedente
-      document.getElementById('editingNoteId').value = '';
-      document.getElementById('btnSaveNote').textContent = "Aggiungi al Diario";
-      document.getElementById('noteEditor').innerHTML = '';
-
-      document.getElementById('detailName').textContent = `${client.lastName} ${client.firstName || ''}`;
-      document.getElementById('detailSub').textContent = client.taxCode ? `CF/P.IVA: ${client.taxCode}` : 'Anagrafica Cliente';
-      document.getElementById('detailAddress').textContent = client.address || '-';
-      document.getElementById('detailCityCap').textContent = `${client.city || '-'} ${client.cap ? '(' + client.cap + ')' : ''}`;
-      document.getElementById('detailEmail').textContent = client.email || '-';
-      document.getElementById('detailPhone').textContent = client.phone || '-';
-      document.getElementById('detailTaxCode').textContent = client.taxCode || '-';
-      document.getElementById('detailNotes').textContent = client.notes || 'Nessuna nota anagrafica';
-
-      renderNotes(client);
-    }
-
-    // --- GESTIONE FORM CLIENTE ---
-    document.getElementById('btnNewClient').onclick = () => {
-      currentClientId = null;
-      renderClientList(searchInput.value);
-      emptyStateEl.classList.add('hidden');
-      detailContainerEl.classList.add('hidden');
-      formContainerEl.classList.remove('hidden');
-
-      document.getElementById('formTitle').textContent = "Nuovo Cliente";
-      clientForm.reset();
-      document.getElementById('clientId').value = '';
-    };
-
-    document.getElementById('btnCancelForm').onclick = () => {
-      formContainerEl.classList.add('hidden');
-      if (currentClientId) {
-        detailContainerEl.classList.remove('hidden');
-      } else {
-        emptyStateEl.classList.remove('hidden');
-      }
-    };
-
-    clientForm.onsubmit = (e) => {
-      e.preventDefault();
-      const id = document.getElementById('clientId').value;
-      const clientData = {
-        id: id ? Number(id) : Date.now(),
-        lastName: document.getElementById('inputLastName').value.trim(),
-        firstName: document.getElementById('inputFirstName').value.trim(),
-        address: document.getElementById('inputAddress').value.trim(),
-        city: document.getElementById('inputCity').value.trim(),
-        cap: document.getElementById('inputCap').value.trim(),
-        email: document.getElementById('inputEmail').value.trim(),
-        phone: document.getElementById('inputPhone').value.trim(),
-        taxCode: document.getElementById('inputTaxCode').value.trim(),
-        notes: document.getElementById('inputNotes').value.trim(),
-        journal: id ? (clients.find(c => c.id == id)?.journal || []) : []
-      };
-
-      if (id) {
-        const index = clients.findIndex(c => c.id == id);
-        if (index !== -1) clients[index] = clientData;
-      } else {
-        clients.push(clientData);
-      }
-
-      saveToStorage();
-      renderClientList(searchInput.value);
-      selectClient(clientData.id);
-    };
-
-    document.getElementById('btnEditClient').onclick = () => {
-      const client = clients.find(c => c.id === currentClientId);
-      if (!client) return;
-
-      detailContainerEl.classList.add('hidden');
-      formContainerEl.classList.remove('hidden');
-      document.getElementById('formTitle').textContent = "Modifica Cliente";
-
-      document.getElementById('clientId').value = client.id;
-      document.getElementById('inputLastName').value = client.lastName || '';
-      document.getElementById('inputFirstName').value = client.firstName || '';
-      document.getElementById('inputAddress').value = client.address || '';
-      document.getElementById('inputCity').value = client.city || '';
-      document.getElementById('inputCap').value = client.cap || '';
-      document.getElementById('inputEmail').value = client.email || '';
-      document.getElementById('inputPhone').value = client.phone || '';
-      document.getElementById('inputTaxCode').value = client.taxCode || '';
-      document.getElementById('inputNotes').value = client.notes || '';
-    };
-
-    document.getElementById('btnDeleteClient').onclick = () => {
-      if (confirm("Vuoi davvero eliminare questo cliente e tutto il suo diario?")) {
-        clients = clients.filter(c => c.id !== currentClientId);
-        saveToStorage();
-        currentClientId = null;
-        renderClientList(searchInput.value);
-        detailContainerEl.classList.add('hidden');
-        emptyStateEl.classList.remove('hidden');
-      }
-    };
-
-    // --- GESTIONE DIARIO / NOTE ---
-    function renderNotes(client) {
-      const noteListEl = document.getElementById('noteList');
-      noteListEl.innerHTML = '';
-      initNoteDate();
-
-      if (!client.journal || client.journal.length === 0) {
-        noteListEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px; text-align:center; padding:10px;">Nessuna nota nel diario.</p>';
-        return;
-      }
-
-      // Ordina per data decrescente
-      const sortedNotes = [...client.journal].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      sortedNotes.forEach(note => {
-        const card = document.createElement('div');
-        card.className = 'note-card';
-        card.innerHTML = `
-          <div class="note-card-header">
-            <span class="note-date">📅 ${formatDateItalian(note.date)}</span>
-            <div class="note-card-actions">
-              <button class="btn-note-action" onclick="editNote('${note.id}')">Modifica</button>
-              <button class="btn-note-action delete" onclick="deleteNote('${note.id}')">Elimina</button>
-            </div>
-          </div>
-          <div class="note-text">${note.text}</div>
-        `;
-        noteListEl.appendChild(card);
-      });
-    }
-
-    document.getElementById('btnSaveNote').onclick = () => {
-      const client = clients.find(c => c.id === currentClientId);
-      if (!client) return;
-
-      const editor = document.getElementById('noteEditor');
-      // Pulisce eventuali caratteri invisibili usati per uscire dai tag colorati
-      const cleanHtml = editor.innerHTML.replace(/\u200B/g, '').trim();
-      const plainText = editor.textContent.replace(/\u200B/g, '').trim();
-      const date = document.getElementById('noteDateInput').value;
-      const editingId = document.getElementById('editingNoteId').value;
-
-      if (!plainText && !cleanHtml.includes('<img')) {
-        alert("Inserisci del testo nella nota.");
-        return;
-      }
-
-      if (!client.journal) client.journal = [];
-
-      if (editingId) {
-        const note = client.journal.find(n => String(n.id) === String(editingId));
-        if (note) {
-          note.text = cleanHtml;
-          note.date = date;
-        }
-        document.getElementById('editingNoteId').value = '';
-        document.getElementById('btnSaveNote').textContent = "Aggiungi al Diario";
-      } else {
-        const newNote = {
-          id: 'note_' + Date.now(),
-          date: date || new Date().toISOString().split('T')[0],
-          text: cleanHtml
-        };
-        client.journal.push(newNote);
-      }
-
-      saveToStorage();
-      editor.innerHTML = '';
-      initNoteDate();
-      renderNotes(client);
-    };
-
-    window.editNote = function(noteId) {
-      const client = clients.find(c => c.id === currentClientId);
-      if (!client) return;
-      const note = client.journal.find(n => String(n.id) === String(noteId));
-      if (!note) return;
-
-      document.getElementById('noteEditor').innerHTML = note.text;
-      document.getElementById('noteDateInput').value = note.date;
-      document.getElementById('editingNoteId').value = note.id;
-      document.getElementById('btnSaveNote').textContent = "Aggiorna Nota";
-      document.getElementById('noteEditor').focus();
-    };
-
-    window.deleteNote = function(noteId) {
-      if (confirm("Eliminare questa nota dal diario?")) {
-        const client = clients.find(c => c.id === currentClientId);
-        if (!client) return;
-        client.journal = client.journal.filter(n => String(n.id) !== String(noteId));
-        saveToStorage();
-        renderNotes(client);
-      }
-    };
-
-    // --- GESTIONE BACKUP (ESPORTAZIONE E IMPORTAZIONE) ---
-    document.getElementById('btnExport').onclick = () => {
-      const blob = new Blob([JSON.stringify(clients, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.href = url;
-      downloadAnchor.download = `backup_anagrafica_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    };
-
-    const btnImport = document.getElementById('btnImport');
-    const fileInput = document.getElementById('fileInput');
-
-    btnImport.onclick = () => {
-      fileInput.click();
-    };
-
-    fileInput.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        try {
-          const importedData = JSON.parse(event.target.result);
-          if (Array.isArray(importedData)) {
-            if (confirm(`Trovati ${importedData.length} clienti nel file di backup. Vuoi sostituire l'archivio attuale con questi dati?`)) {
-              clients = importedData;
-              saveToStorage();
-              currentClientId = null;
-              renderClientList();
-              detailContainerEl.classList.add('hidden');
-              formContainerEl.classList.add('hidden');
-              emptyStateEl.classList.remove('hidden');
-              alert("Backup importato con successo!");
-            }
-          } else {
-            alert("Il file non è un formato di backup valido.");
-          }
-        } catch (err) {
-          alert("Errore durante la lettura del file JSON.");
-        }
-        fileInput.value = ''; // Reset input file
-      };
-      reader.readAsText(file);
-    };
-
-    // Ricerca in tempo reale
-    searchInput.oninput = (e) => {
-      renderClientList(e.target.value);
-    };
-
-    // Avvio iniziale
-    renderClientList();
-    initNoteDate();
-  </script>
-</body>
-</html>
+            <button type="button" class="btn-format" onmousedown="event.preventDefault(); applyFormat('hiliteColor', '#5cd65c')"><span class="color-dot" style="background:#5cd65c;"></span> Verde</
