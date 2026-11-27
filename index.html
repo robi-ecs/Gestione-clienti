@@ -231,22 +231,22 @@
     .form-card-inline {
       background: var(--bg-color);
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px 20px;
       border: 1px solid var(--border-color);
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
 
     .form-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 16px;
+      gap: 9px 12px;
+      margin-top: 12px;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
     .form-group.full {
@@ -260,19 +260,26 @@
     }
 
     .form-group input, .form-group textarea {
-      padding: 8px 12px;
+      padding: 7px 11px;
       border-radius: 6px;
       border: 1px solid var(--border-color);
       font-size: 14px;
+      line-height: 1.45;
       background: white;
       outline: none;
+    }
+
+    #inputNotes {
+      min-height: calc(5 * 1.45em);
+      resize: vertical;
     }
 
     .form-actions {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      margin-top: 20px;
+      margin-top: 26px;
+      padding-top: 4px;
     }
 
     /* Grid Dati Anagrafici */
@@ -564,7 +571,7 @@
           </div>
           <div class="form-group full">
             <label>Note Anagrafiche (Generali)</label>
-            <textarea id="inputNotes" style="height: 60px;"></textarea>
+            <textarea id="inputNotes"></textarea>
           </div>
 
           <div class="form-actions full">
